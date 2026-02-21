@@ -33,7 +33,7 @@ icon = ["assets/icon.png"]
 installer_mode = "perUser"
 compression = "lzma"
 icon = ["assets/img/icon.ico"]
-installer_icon = ["assets/img/icon.ico"]
+installer_icon = "assets/img/icon.ico"
 
 
 [dependencies]
