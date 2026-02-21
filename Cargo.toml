@@ -1,0 +1,47 @@
+[package]
+name = "egui_ab_app"
+version = "0.1.0"
+edition = "2024"
+repository = "https://github.com/abner/egui_ab_app"
+
+[[bin]]
+name = "ab-app-internal"
+path = "src/main.rs"
+
+[package.metadata.bundle]
+name = "AB Template App"
+identifier = "io.abner.desktop.eguiapp"
+version = "1.0.0"
+category = { linx = "Utility", windows = "Utility", macos = "Utility" }
+short_description = "Brutal Internal Team App"
+long_description = "A brutalist-design team management application"
+#icon = ["./assets/icons.icns", "./assets/1024.png"]
+#icon = ["/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png", "/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/64.png", "/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/128.png"]
+icon = ["assets/icon.png"]
+publisher = "Abner Oliveira <abner.silva@gmail.com>"
+
+[package.metadata.bundle.macOS]  
+icon = ["./assets/icons.icns"]
+
+
+# Windows: MSI and NSIS installers
+[package.metadata.bundle.windows]
+wix_language = "en-US"
+icon = ["assets/icon.png"]
+
+[package.metadata.bundle.windows.nsis]
+installer_mode = "perUser"
+compression = "lzma"
+icon = ["assets/img/icon.ico"]
+installer_icon = ["assets/img/icon.ico"]
+
+
+[dependencies]
+eframe = "0.33.3"
+egui = "0.33.3"
+egui_extras = { version = "0.33.3", features = ["image", "svg"] }
+image = "0.25"
+usvg = "0.45"
+muda = "0.17.1"
+crossbeam-channel = "0.5"
+chrono = { version = "0.4", features = ["serde"] }

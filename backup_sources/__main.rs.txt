@@ -1,0 +1,545 @@
+use eframe::egui;
+
+fn _main() -> eframe::Result<()> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_title("Brutal Internal")
+            .with_inner_size([1180.0, 780.0])
+            .with_min_inner_size([980.0, 640.0]),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Brutal Internal",
+        options,
+        Box::new(|cc| {
+            install_fonts(&cc.egui_ctx);
+            install_theme(&cc.egui_ctx);
+            Ok(Box::new(App::new()))
+        }),
+    )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Screen {
+    Splash,
+    Dashboard,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Nav {
+    Dashboard,
+    Reports,
+    Data,
+    Tasks,
+    Settings,
+}
+
+struct App {
+    screen: Screen,
+    nav: Nav,
+
+    // demo data
+    status_online: bool,
+    active_users: u32,
+    pending_tasks: u32,
+    revenue: i64,
+    new_orders: u32,
+    cpu: f32,
+    mem: f32,
+}
+
+impl App {
+    fn new() -> Self {
+        Self {
+            screen: Screen::Splash,
+            nav: Nav::Dashboard,
+            status_online: true,
+            active_users: 128,
+            pending_tasks: 7,
+            revenue: 42_300,
+            new_orders: 56,
+            cpu: 0.53,
+            mem: 0.68,
+        }
+    }
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        match self.screen {
+            Screen::Splash => ui_splash(self, ctx),
+            Screen::Dashboard => ui_dashboard(self, ctx),
+        }
+    }
+}
+
+/// ---------------------------
+/// Fonts
+/// ---------------------------
+/// Put these in:
+///   assets/fonts/BrutalDisplay.ttf
+///   assets/fonts/JetBrainsMono-Regular.ttf
+///   assets/fonts/MaterialSymbolsRounded.ttf  (optional, but included here for fidelity)
+fn install_fonts(ctx: &egui::Context) {
+    let mut fonts = egui::FontDefinitions::default();
+
+    let brutal = egui::FontData::from_static(include_bytes!("../assets/fonts/Bungee-Regular.ttf"));
+    let mono = egui::FontData::from_static(include_bytes!("../assets/fonts/MonofurNerdFont-Regular.ttf"));
+    let icons = egui::FontData::from_static(include_bytes!("../assets/fonts/MaterialSymbolsRounded.ttf"));
+
+    fonts.font_data.insert("BrutalDisplay".into(), brutal.into());
+    fonts.font_data.insert("TerminalMono".into(), mono.into());
+    fonts.font_data.insert("IconFont".into(), icons.into());
+
+    // Use mono as the primary UI font (dashboard is terminal-ish)
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, "TerminalMono".into());
+
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Monospace)
+        .unwrap()
+        .insert(0, "TerminalMono".into());
+
+    // Dedicated brutal display family
+    fonts.families.insert(
+        egui::FontFamily::Name("Brutal".into()),
+        vec!["BrutalDisplay".into()],
+    );
+
+    // Dedicated icon family
+    fonts.families.insert(
+        egui::FontFamily::Name("IconFont".into()),
+        vec!["IconFont".into()],
+    );
+
+    ctx.set_fonts(fonts);
+}
+
+/// ---------------------------
+/// Theme
+/// ---------------------------
+fn install_theme(ctx: &egui::Context) {
+    let mut style = (*ctx.style()).clone();
+
+    style.visuals = egui::Visuals::dark();
+
+    // Brutalist: square corners everywhere
+    let _zero = egui::CornerRadius::ZERO;
+    // Note: Some rounding properties moved in newer egui versions
+    // We'll set what's available
+
+    // Thick strokes like the mock
+    style.visuals.window_stroke = egui::Stroke::new(2.0, egui::Color32::from_gray(210));
+    style.visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(2.0, egui::Color32::from_gray(200));
+    style.visuals.widgets.inactive.bg_stroke = egui::Stroke::new(2.0, egui::Color32::from_gray(160));
+    style.visuals.widgets.hovered.bg_stroke = egui::Stroke::new(2.0, egui::Color32::from_gray(230));
+    style.visuals.widgets.active.bg_stroke = egui::Stroke::new(2.0, egui::Color32::WHITE);
+
+    style.spacing.item_spacing = egui::vec2(12.0, 10.0);
+    style.spacing.window_margin = egui::Margin::same(14);
+    style.spacing.button_padding = egui::vec2(12.0, 10.0);
+
+    // Text sizes tuned for terminal UI
+    style.text_styles = [
+        (egui::TextStyle::Heading, egui::FontId::new(22.0, egui::FontFamily::Proportional)),
+        (egui::TextStyle::Body, egui::FontId::new(15.5, egui::FontFamily::Proportional)),
+        (egui::TextStyle::Monospace, egui::FontId::new(14.5, egui::FontFamily::Monospace)),
+        (egui::TextStyle::Button, egui::FontId::new(15.5, egui::FontFamily::Proportional)),
+        (egui::TextStyle::Small, egui::FontId::new(12.5, egui::FontFamily::Proportional)),
+    ]
+    .into();
+
+    ctx.set_style(style);
+}
+
+/// ---------------------------
+/// Colors / tokens
+/// ---------------------------
+fn c_orange() -> egui::Color32 {
+    egui::Color32::from_rgb(0xF9, 0x8C, 0x1F) // #f98c1f
+}
+fn c_bg_outer() -> egui::Color32 {
+    egui::Color32::from_gray(185) // light grey outer frame like mock
+}
+fn c_bg_inner() -> egui::Color32 {
+    egui::Color32::from_gray(18) // dark inner background
+}
+fn c_panel() -> egui::Color32 {
+    egui::Color32::from_gray(12) // deeper panel
+}
+fn c_border() -> egui::Color32 {
+    egui::Color32::from_gray(220)
+}
+fn s_border() -> egui::Stroke {
+    egui::Stroke::new(2.0, c_border())
+}
+
+/// ---------------------------
+/// Splash (faithful layout)
+/// ---------------------------
+fn ui_splash(app: &mut App, ctx: &egui::Context) {
+    let outer = egui::Frame::new()
+        .fill(c_bg_outer())
+        .stroke(egui::Stroke::new(2.0, egui::Color32::from_gray(40)))
+        .inner_margin(egui::Margin::same(12));
+
+    egui::CentralPanel::default().frame(outer).show(ctx, |ui| {
+        let inner = egui::Frame::new()
+            .fill(c_orange())
+            .stroke(egui::Stroke::new(2.0, egui::Color32::from_gray(25)))
+            .inner_margin(egui::Margin::same(0));
+
+        inner.show(ui, |ui| {
+            let rect = ui.max_rect();
+            paint_splash_left_glitch(ui.painter(), rect);
+
+            // Footer line
+            let footer_y = rect.max.y - 44.0;
+            let line_from = egui::pos2(rect.min.x + 190.0, footer_y);
+            let line_to = egui::pos2(rect.max.x - 30.0, footer_y);
+            ui.painter().line_segment([line_from, line_to], egui::Stroke::new(1.5, egui::Color32::from_black_alpha(120)));
+
+            // Footer text
+            ui.painter().text(
+                egui::pos2(rect.center().x, rect.max.y - 24.0),
+                egui::Align2::CENTER_CENTER,
+                "v0.1.0  —  Internal Build",
+                egui::FontId::new(14.0, egui::FontFamily::Proportional),
+                egui::Color32::from_black_alpha(160),
+            );
+
+            // Center content
+            ui.vertical_centered(|ui| {
+                ui.add_space(rect.height() * 0.18);
+
+                // Big title with hard shadow
+                let title_font = egui::FontId::new(86.0, egui::FontFamily::Name("Brutal".into()));
+                let title_text = "BRUTAL APP";
+
+                let title_pos = egui::pos2(rect.center().x, rect.min.y + rect.height() * 0.28);
+
+                // shadow (hard offset)
+                ui.painter().text(
+                    egui::pos2(title_pos.x + 6.0, title_pos.y + 10.0),
+                    egui::Align2::CENTER_CENTER,
+                    title_text,
+                    title_font.clone(),
+                    egui::Color32::from_black_alpha(140),
+                );
+                // main
+                ui.painter().text(
+                    title_pos,
+                    egui::Align2::CENTER_CENTER,
+                    title_text,
+                    title_font,
+                    egui::Color32::BLACK,
+                );
+
+                ui.add_space(150.0);
+
+                // ENTER button (hard-edged, centered)
+                let button_w = 260.0;
+                let button_h = 56.0;
+
+                let btn = egui::Button::new(
+                    egui::RichText::new("ENTER")
+                        .color(egui::Color32::WHITE)
+                        .strong()
+                        .size(18.0),
+                )
+                .fill(egui::Color32::BLACK)
+                .stroke(egui::Stroke::new(2.0, egui::Color32::from_gray(30)))
+                .min_size(egui::vec2(button_w, button_h));
+
+                if ui.add(btn).clicked() {
+                    app.screen = Screen::Dashboard;
+                }
+            });
+        });
+    });
+}
+
+fn paint_splash_left_glitch(p: &egui::Painter, rect: egui::Rect) {
+    // Dark vertical band
+    let band = egui::Rect::from_min_max(rect.min, egui::pos2(rect.min.x + 160.0, rect.max.y));
+    p.rect_filled(band, 0.0, egui::Color32::from_black_alpha(50));
+
+    // Glitch blocks (white + black) similar to mock
+    let blocks = [
+        (egui::pos2(rect.min.x + 18.0, rect.min.y + 80.0), egui::vec2(76.0, 18.0), egui::Color32::WHITE),
+        (egui::pos2(rect.min.x + 12.0, rect.min.y + 140.0), egui::vec2(128.0, 28.0), egui::Color32::WHITE),
+        (egui::pos2(rect.min.x + 36.0, rect.min.y + 110.0), egui::vec2(42.0, 14.0), egui::Color32::BLACK),
+        (egui::pos2(rect.min.x + 32.0, rect.min.y + 220.0), egui::vec2(42.0, 16.0), egui::Color32::BLACK),
+        (egui::pos2(rect.min.x + 12.0, rect.min.y + 310.0), egui::vec2(118.0, 20.0), egui::Color32::WHITE),
+        (egui::pos2(rect.min.x + 22.0, rect.min.y + 360.0), egui::vec2(88.0, 18.0), egui::Color32::WHITE),
+        (egui::pos2(rect.min.x + 16.0, rect.min.y + 430.0), egui::vec2(140.0, 38.0), egui::Color32::BLACK),
+    ];
+
+    for (pos, size, color) in blocks {
+        let r = egui::Rect::from_min_size(pos, size);
+        p.rect_filled(r, 0.0, color);
+    }
+}
+
+/// ---------------------------
+/// Dashboard (faithful structure)
+/// ---------------------------
+fn ui_dashboard(app: &mut App, ctx: &egui::Context) {
+    // Outer frame like the mock (light grey with dark stroke)
+    let outer = egui::Frame::new()
+        .fill(c_bg_outer())
+        .stroke(egui::Stroke::new(2.0, egui::Color32::from_gray(40)))
+        .inner_margin(egui::Margin::same(10));
+
+    egui::CentralPanel::default().frame(outer).show(ctx, |ui| {
+        // Inner dark area
+        let inner = egui::Frame::new()
+            .fill(c_bg_inner())
+            .stroke(egui::Stroke::new(2.0, egui::Color32::from_gray(60)))
+            .inner_margin(egui::Margin::same(10));
+
+        inner.show(ui, |ui| {
+            // Sidebar
+            egui::SidePanel::left("sidebar")
+                .resizable(false)
+                .min_width(235.0)
+                .frame(
+                    egui::Frame::new()
+                        .fill(egui::Color32::BLACK)
+                        .stroke(egui::Stroke::new(2.0, egui::Color32::from_gray(80)))
+                        .inner_margin(egui::Margin::same(12)),
+                )
+                .show_inside(ui, |ui| {
+                    ui.add_space(6.0);
+
+                    ui.label(
+                        egui::RichText::new("BRUTAL INTERNAL")
+                            .strong()
+                            .size(16.0)
+                            .color(egui::Color32::WHITE)
+                            .font(egui::FontId::new(16.0, egui::FontFamily::Name("Brutal".into()))),
+                    );
+                    ui.add_space(14.0);
+
+                    nav_btn(app, ui, Nav::Dashboard, icon_text("home"), "DASHBOARD");
+                    nav_btn(app, ui, Nav::Reports, icon_text("bar_chart"), "REPORTS");
+                    nav_btn(app, ui, Nav::Data, icon_text("database"), "DATA");
+                    nav_btn(app, ui, Nav::Tasks, icon_text("check"), "TASKS");
+                    nav_btn(app, ui, Nav::Settings, icon_text("settings"), "SETTINGS");
+
+                    ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+                        ui.add_space(6.0);
+                        let btn = egui::Button::new(
+                            egui::RichText::new("⏻  LOG OUT")
+                                .strong()
+                                .color(egui::Color32::WHITE),
+                        )
+                        .fill(egui::Color32::from_gray(22))
+                        .stroke(s_border())
+                        .min_size(egui::vec2(ui.available_width(), 44.0));
+
+                        ui.add(btn);
+                    });
+                });
+
+            // Main content
+            egui::CentralPanel::default()
+                .frame(egui::Frame::new().fill(c_panel()).inner_margin(egui::Margin::same(12)))
+                .show_inside(ui, |ui| {
+                    // Top badges row
+                    ui.horizontal(|ui| {
+                        badge_status(ui, app.status_online);
+                        badge_kv(ui, "ACTIVE USERS", &app.active_users.to_string(), egui::Color32::BLACK);
+                        badge_kv(ui, "PENDING TASKS", &app.pending_tasks.to_string(), c_orange());
+                    });
+
+                    ui.add_space(12.0);
+
+                    // Two columns like the mock
+                    ui.columns(2, |cols| {
+                        // LEFT column
+                        cols[0].vertical(|ui| {
+                            card(ui, "OVERVIEW", |ui| {
+                                ui.horizontal(|ui| {
+                                    stat_box(ui, "REVENUE", &format!("${}", app.revenue), c_orange());
+                                    ui.add_space(10.0);
+                                    stat_box(ui, "NEW ORDERS", &format!("{}", app.new_orders), egui::Color32::from_rgb(80, 200, 120));
+                                });
+                            });
+
+                            ui.add_space(12.0);
+
+                            card(ui, "LATEST UPDATES", |ui| {
+                                list_item(ui, "◇ System Check Complete");
+                                list_item(ui, "◇ New Report Generated");
+                                list_item(ui, "◇ Backup Successful");
+                            });
+
+                            ui.add_space(12.0);
+
+                            card(ui, "SERVER LOAD", |ui| {
+                                ui.label("CPU:  53%");
+                                progress_bar(ui, app.cpu);
+                                ui.add_space(8.0);
+                                ui.label("MEMORY:  68%");
+                                progress_bar(ui, app.mem);
+                            });
+                        });
+
+                        // RIGHT column
+                        cols[1].vertical(|ui| {
+                            card(ui, "TRAFFIC STATS", |ui| {
+                                ui.label("VISITS LAST WEEK");
+                                // Placeholder chart that reads like the mock without bringing extra deps
+                                let chart = "▁▂▃▂▄▅▆▆";
+                                ui.label(
+                                    egui::RichText::new(chart)
+                                        .size(26.0)
+                                        .color(c_orange())
+                                        .monospace(),
+                                );
+                                ui.add_space(4.0);
+                                ui.label(egui::RichText::new("— plot placeholder —").color(egui::Color32::from_gray(160)));
+                            });
+
+                            ui.add_space(12.0);
+
+                            card(ui, "TASK LIST", |ui| {
+                                checkbox_row(ui, true, "Fix Bug #104");
+                                checkbox_row(ui, false, "Update Database");
+                                checkbox_row(ui, false, "Review Logs");
+                            });
+
+                            ui.add_space(12.0);
+
+                            card(ui, "NOTIFICATIONS", |ui| {
+                                list_item(ui, "! Alert: Disk Space Low");
+                                list_item(ui, "* Reminder: Meeting at 3 PM");
+                            });
+                        });
+                    });
+                });
+        });
+    });
+}
+
+/// ---------------------------
+/// Components
+/// ---------------------------
+fn nav_btn(app: &mut App, ui: &mut egui::Ui, nav: Nav, icon: String, label: &str) {
+    let selected = app.nav == nav;
+
+    let fill = if selected { egui::Color32::from_gray(34) } else { egui::Color32::from_gray(20) };
+    let stroke = if selected {
+        egui::Stroke::new(2.0, egui::Color32::WHITE)
+    } else {
+        egui::Stroke::new(2.0, egui::Color32::from_gray(150))
+    };
+
+    let text = format!("{}  {}", icon, label);
+
+    let btn = egui::Button::new(egui::RichText::new(text).strong().color(egui::Color32::WHITE))
+        .fill(fill)
+        .stroke(stroke)
+        .min_size(egui::vec2(ui.available_width(), 44.0));
+
+    if ui.add(btn).clicked() {
+        app.nav = nav;
+    }
+    ui.add_space(8.0);
+}
+
+
+/// Icon helper:
+/// - If you later map Material Symbols codepoints, put them here.
+/// - For now we use readable ASCII/Unicode that fits brutalism and works without mapping.
+fn icon_text(kind: &str) -> String {
+    match kind {
+        "home" => "⌂".to_owned(),
+        "bar_chart" => "▦".to_owned(),
+        "database" => "⛁".to_owned(),
+        "check" => "✓".to_owned(),
+        "settings" => "⚙".to_owned(),
+        _ => "■".to_owned(),
+    }
+}
+
+fn badge_status(ui: &mut egui::Ui, online: bool) {
+    let (label, fill) = if online {
+        ("STATUS: ONLINE", egui::Color32::from_rgb(90, 170, 80))
+    } else {
+        ("STATUS: OFFLINE", egui::Color32::from_rgb(170, 90, 80))
+    };
+
+    badge_block(ui, label, fill, egui::Color32::BLACK, 230.0);
+}
+
+fn badge_kv(ui: &mut egui::Ui, key: &str, value: &str, fill: egui::Color32) {
+    let text = format!("{}: {}", key, value);
+    let fg = if fill == egui::Color32::BLACK { egui::Color32::WHITE } else { egui::Color32::BLACK };
+    badge_block(ui, &text, fill, fg, 260.0);
+}
+
+fn badge_block(ui: &mut egui::Ui, text: &str, fill: egui::Color32, fg: egui::Color32, w: f32) {
+    let h = 38.0;
+    
+    egui::Frame::new()
+        .fill(fill)
+        .stroke(egui::Stroke::new(2.0, c_border()))
+        .show(ui, |ui| {
+            ui.set_min_size(egui::vec2(w, h));
+            ui.centered_and_justified(|ui| {
+                ui.label(egui::RichText::new(text).size(14.5).color(fg));
+            });
+        });
+    ui.add_space(10.0);
+}
+
+fn card(ui: &mut egui::Ui, title: &str, body: impl FnOnce(&mut egui::Ui)) {
+    egui::Frame::new()
+        .fill(egui::Color32::from_gray(16))
+        .stroke(s_border())
+        .inner_margin(egui::Margin::same(12))
+        .show(ui, |ui| {
+            ui.label(egui::RichText::new(title).strong().size(16.0).color(egui::Color32::WHITE));
+            ui.add_space(10.0);
+            body(ui);
+        });
+}
+
+fn stat_box(ui: &mut egui::Ui, label: &str, value: &str, accent: egui::Color32) {
+    egui::Frame::new()
+        .fill(egui::Color32::from_gray(14))
+        .stroke(s_border())
+        .inner_margin(egui::Margin::same(10))
+        .show(ui, |ui| {
+            ui.label(egui::RichText::new(label).color(egui::Color32::from_gray(190)));
+            ui.label(egui::RichText::new(value).size(22.0).strong().color(accent));
+        });
+}
+
+fn list_item(ui: &mut egui::Ui, text: &str) {
+    ui.label(egui::RichText::new(text).color(egui::Color32::from_gray(235)));
+}
+
+fn checkbox_row(ui: &mut egui::Ui, checked: bool, label: &str) {
+    let box_glyph = if checked { "☑" } else { "☐" };
+    ui.label(egui::RichText::new(format!("{}  {}", box_glyph, label)).color(egui::Color32::from_gray(235)));
+}
+
+fn progress_bar(ui: &mut egui::Ui, v: f32) {
+    let v = v.clamp(0.0, 1.0);
+    
+    let progress = egui::ProgressBar::new(v)
+        .desired_width(ui.available_width())
+        .desired_height(18.0)
+        .fill(c_orange())
+        .corner_radius(egui::CornerRadius::ZERO);
+        
+    ui.add(progress);
+}

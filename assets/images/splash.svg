@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="0" y="0" width="1024" height="1024" fill="#000000"/>
+  <path d="M140 380 L210 300 L814 300 L884 380 L860 680 L814 740 L210 740 L164 680 Z"
+        fill="#ffffff"/>
+  <text x="512" y="665" text-anchor="middle"
+        font-family="Anton, Impact, Haettenschweiler, 'Arial Black', sans-serif"
+        font-weight="900" font-size="520" fill="#000000">B</text>
+</svg>
