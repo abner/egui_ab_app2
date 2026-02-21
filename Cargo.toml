@@ -27,12 +27,11 @@ icon = ["./assets/icons.icns"]
 # Windows: MSI and NSIS installers
 [package.metadata.bundle.windows]
 wix_language = "en-US"
-icon = ["assets/icon.png"]
+icon = ["assets/img/icon.png"]
 
 [package.metadata.bundle.windows.nsis]
 installer_mode = "perUser"
 compression = "lzma"
-icon = ["assets/img/icon.png"]
 installer_icon = "assets/img/icon.ico"
 
 
