@@ -17,7 +17,7 @@ short_description = "Brutal Internal Team App"
 long_description = "A brutalist-design team management application"
 #icon = ["./assets/icons.icns", "./assets/1024.png"]
 #icon = ["/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png", "/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/64.png", "/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/128.png"]
-icon = ["assets/icon.png"]
+icon = ["assets/img/icon.png"]
 publisher = "Abner Oliveira <abner.silva@gmail.com>"
 
 [package.metadata.bundle.macOS]  
@@ -32,7 +32,7 @@ icon = ["assets/icon.png"]
 [package.metadata.bundle.windows.nsis]
 installer_mode = "perUser"
 compression = "lzma"
-icon = ["assets/img/icon.ico"]
+icon = ["assets/img/icon.png"]
 installer_icon = "assets/img/icon.ico"
 
 
