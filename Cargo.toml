@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 repository = "https://github.com/abner/egui_ab_app"
 
-[[bin]]
-name = "ab-app-internal"
-path = "src/main.rs"
+# [[bin]]
+# name = "ab-app-internal"
+# path = "src/main.rs"
 
 [package.metadata.bundle]
 name = "AB Template App"
@@ -17,7 +17,7 @@ short_description = "Brutal Internal Team App"
 long_description = "A brutalist-design team management application"
 #icon = ["./assets/icons.icns", "./assets/1024.png"]
 #icon = ["/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png", "/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/64.png", "/assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/128.png"]
-icon = ["assets/img/icon.png"]
+icon = ["assets/icon.ico"]
 publisher = "Abner Oliveira <abner.silva@gmail.com>"
 
 [package.metadata.bundle.macOS]  
@@ -27,7 +27,7 @@ icon = ["./assets/icons.icns"]
 # Windows: MSI and NSIS installers
 [package.metadata.bundle.windows]
 wix_language = "en-US"
-icon = ["assets/img/icon.png"]
+icon = ["assets/icon.ico"]
 
 [package.metadata.bundle.windows.nsis]
 installer_mode = "perUser"
